@@ -63,7 +63,13 @@ func main() {
 				return
 			}
 
-			publish(client, datarequest["message"].(string))
+			newRequst, err := json.Marshal(datarequest)
+			if err != nil {
+				response.Response(w, http.StatusBadRequest, "Invalid request payload", nil)
+				return
+			}
+
+			publish(client, string(newRequst))
 			response.Response(w, http.StatusOK, "Publish success", datarequest)
 		})
 	})
