@@ -62,9 +62,9 @@ func main() {
 
 	// Create a new MQTT Client
 	var broker = os.Getenv("BROKER")
-	var port = cast.ToInt(os.Getenv("PORT"))
+	var port = cast.ToInt(os.Getenv("MQTT_PORT"))
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
+	opts.AddBroker(fmt.Sprintf("%s:%d", broker, port))
 	opts.SetClientID("go_mqtt_client")
 	opts.SetUsername("emqx")
 	opts.SetPassword("public")
@@ -123,8 +123,15 @@ func main() {
 		})
 	})
 
-	log.Println("Service running on " + os.Getenv("APP_LOCAL_HOST") + ":" + os.Getenv("APP_LOCAL_PORT"))
-	if err := http.ListenAndServe(":"+os.Getenv("APP_LOCAL_PORT"), r); err != nil {
+	log.Println("Service running on " + os.Getenv("HOST") + ":" + os.Getenv("PORT"))
+
+	portServer := os.Getenv("PORT")
+
+	if portServer == "" {
+		portServer = "8080"
+	}
+
+	if err := http.ListenAndServe(":"+portServer, r); err != nil {
 		log.Println("Error Starting Service")
 	}
 }
