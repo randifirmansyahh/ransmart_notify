@@ -2,13 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"ransmart_notify/app/helper/response"
 
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
+	"github.com/spf13/cast"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -27,17 +30,17 @@ type ReqNotify struct {
 	Data    interface{} `json:"data"`
 }
 
-// var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-// 	fmt.Printf("%s", msg.Payload())
-// }
+var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+	fmt.Printf("%s", msg.Payload())
+}
 
-// var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-// 	fmt.Println("Connected")
-// }
+var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+	fmt.Println("Connected")
+}
 
-// var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-// 	fmt.Printf("Connect lost: %v", err)
-// }
+var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
+	fmt.Printf("Connect lost: %v", err)
+}
 
 func main() {
 
@@ -58,23 +61,23 @@ func main() {
 	db.AutoMigrate(&Notify{})
 
 	// Create a new MQTT Client
-	// var broker = os.Getenv("BROKER")
-	// var port = cast.ToInt(os.Getenv("MQTT_PORT"))
-	// opts := mqtt.NewClientOptions()
-	// opts.AddBroker(fmt.Sprintf("%s:%d", broker, port))
-	// opts.SetClientID("go_mqtt_client")
-	// opts.SetUsername("emqx")
-	// opts.SetPassword("public")
-	// opts.SetDefaultPublishHandler(messagePubHandler)
-	// opts.OnConnect = connectHandler
-	// opts.OnConnectionLost = connectLostHandler
-	// client := mqtt.NewClient(opts)
-	// if token := client.Connect(); token.Wait() && token.Error() != nil {
-	// 	panic(token.Error())
-	// }
+	var broker = os.Getenv("BROKER")
+	var port = cast.ToInt(os.Getenv("MQTT_PORT"))
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker(fmt.Sprintf("%s:%d", broker, port))
+	opts.SetClientID("go_mqtt_client")
+	opts.SetUsername("emqx")
+	opts.SetPassword("public")
+	opts.SetDefaultPublishHandler(messagePubHandler)
+	opts.OnConnect = connectHandler
+	opts.OnConnectionLost = connectLostHandler
+	client := mqtt.NewClient(opts)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
 
-	// // subcribe to topic
-	// sub(client)
+	// subcribe to topic
+	sub(client)
 
 	// router
 	r := chi.NewRouter()
@@ -104,7 +107,7 @@ func main() {
 			db.Create(&Notify{OrderId: datarequest.OrderId, Request: string(newRequst)})
 
 			// Publish
-			// publish(client, string(newRequst))
+			publish(client, string(newRequst))
 
 			// update is_sent
 			db.Model(&Notify{}).Where("order_id = ?", datarequest.OrderId).Update("is_sent", true)
@@ -123,7 +126,6 @@ func main() {
 	log.Println("Service running on " + os.Getenv("HOST") + ":" + os.Getenv("PORT"))
 
 	portServer := os.Getenv("PORT")
-
 	if portServer == "" {
 		portServer = "8080"
 	}
@@ -133,13 +135,13 @@ func main() {
 	}
 }
 
-// func publish(client mqtt.Client, msg string) {
-// 	token := client.Publish(os.Getenv("TOPIC"), 0, false, msg)
-// 	token.Wait()
-// }
+func publish(client mqtt.Client, msg string) {
+	token := client.Publish(os.Getenv("TOPIC"), 0, false, msg)
+	token.Wait()
+}
 
-// func sub(client mqtt.Client) {
-// 	topic := os.Getenv("TOPIC")
-// 	token := client.Subscribe(topic, 1, nil)
-// 	token.Wait()
-// }
+func sub(client mqtt.Client) {
+	topic := os.Getenv("TOPIC")
+	token := client.Subscribe(topic, 1, nil)
+	token.Wait()
+}
