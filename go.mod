@@ -1,5 +1,6 @@
 module ransmart_notify
 
+// +heroku goVersion go1.17
 go 1.17
 
 require github.com/eclipse/paho.mqtt.golang v1.3.5
