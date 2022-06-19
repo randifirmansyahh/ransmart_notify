@@ -84,7 +84,7 @@ func main() {
 
 	// check service
 	r.Group(func(g chi.Router) {
-		g.Get("/check", func(w http.ResponseWriter, r *http.Request) {
+		g.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			response.Response(w, http.StatusOK, "Service is running", nil)
 		})
 
